@@ -1,0 +1,313 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: __devOps.stage.ns__
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: application-secrets
+  namespace: __devOps.stage.ns__
+type: Opaque
+stringData:
+  application.properties: |
+    azure.keyvault.uri=__azure-keyvault-uri__
+    azure.keyvault.client-id=__azure-keyvault-client-id__
+    azure.keyvault.client-key=__azure-keyvault-client-key__
+    azure.keyvault.tenant-id=__azure-keyvault-tenant-id__
+    avp.tenant.id=__avp.tenant__
+    features.nextgen.enabled=__avp.features.nextgen.enabled__
+    features.acdp.enabled=__avp.features.acdp.enabled__
+    features.acdp.dataexport.enabled=__avp.features.acdp.dataexport.enabled__
+    features.locale.enabled=__avp.features.locale.enabled__
+    features.vdl.enabled=__avp.features.vdl.enabled__
+    features.security.audit.log.enabled=__avp.features.security.audit.log.enabled__
+    avp.stage=__devOps.stage__
+    app-powerBi-baseUrl=https://api.powerbi.com/v1.0/myorg
+    logging.level.com.microsoft.azure.servicebus=WARN
+    logging.level.com.azure.security.keyvault.secrets=WARN
+    app.homepage.limit=__avp.homepage.limit__
+    app.homepage.visualisation.limit=__avp.homepage.visualisation.limit__
+    app.mywatchlist.limit= __avp.mywatchlist.limit__
+    app.mysavedviews.limit= __avp.mysavedviews.limit__
+    nextgenfeatures.inss2336 = true
+    app.mygoals.limit= __avp.mygoals.limit__
+    app.sendgrid.fromemail= __avp.sendgrid.fromemail__
+    app.sendgrid.apikey=__avp.sendgrid.apikey__
+    app.base.url=__avp.base.url__
+    app.goals.scheduler.interval=__avp.goals.scheduler.interval__
+    app.goals.scheduler.enabled=__avp.goals.scheduler.enabled__
+    app.alerts.ttl.days=__avp.alerts.ttl.days__
+    app.alerts.delete.scheduler.interval=__avp.alerts.delete.scheduler.interval__
+    app.alerts.delete.scheduler.enabled=__avp.alerts.delete.scheduler.enabled__
+    app.spring.task.scheduling.pool.size=__avp.spring.task.scheduling.pool.size__
+    app.configstatus.cache.ttl.minutes=__avp.configstatus.cache.ttl.minutes__
+    app.goals.metadata.config.cache.ttl.minutes=__avp.goals.metadata.config.cache.ttl.minutes__
+    app.alerts.email.subject=__avp.alerts.email.subject__
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: avp-product-version
+  namespace: __devOps.stage.ns__
+data:
+  avpProduct.json: |
+    {
+    "label": "Analytics Visualization Platform",
+    "commitId": null,
+    "buildNumber": "__avp.app.version__"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nxtgen-product-version
+  namespace: __devOps.stage.ns__
+data:
+  nxtgenProduct.json: |
+    {
+    "label": "InSightive Gen 2",
+    "commitId": null,
+    "buildNumber": "__avp.nxtgen.app.version__"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: avp-product-full-version
+  namespace: __devOps.stage.ns__
+data:
+  avpProductFullVersion.json: |
+    {
+    "label": "Analytics Visualization Platform",
+    "commitId": null,
+    "buildNumber": "__avp.app.full.version__"
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nxtgen-product-full-version
+  namespace: __devOps.stage.ns__
+data:
+  nxtgenProductFullVersion.json: |
+    {
+    "label": "InSightive Gen 2",
+    "commitId": null,
+    "buildNumber": "__avp.nxtgen.app.full.version__"
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: uap-product-version
+  namespace: __devOps.stage.ns__
+data:
+  uapProduct.json: |
+    {
+    "label": "Analytics Customer Data Platform",
+    "commitId": null,
+    "buildNumber": "__avp.config.acdp.version__"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: core-platform-version
+  namespace: __devOps.stage.ns__
+data:
+  coreplatform.json: |
+    {
+    "label": "Core Platform",
+    "commitId": null,
+    "buildNumber": "__avp.config.cp.version__"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextgen-server-version
+  namespace: __devOps.stage.ns__
+data:
+  nextgenService.json: |
+    {
+    "label": "NextGen Server",
+    "commitId": null,
+    "buildNumber": "__devOps.pipeline.build__"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vdl-product-version
+  namespace: __devOps.stage.ns__
+data:
+  vdlProduct.json: |
+    {
+    "label": "Varian Data Lake",
+    "commitId": null,
+    "buildNumber": "__avp.config.vdl.version__"
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextgen-server-deployment-__avp.tenant__-__devOps.stage__
+  namespace: __devOps.stage.ns__
+  labels:
+    azureReleaseName: "__Release.ReleaseName__"
+    azureDeploymentId: "__Release.DeploymentID__"
+spec:
+  replicas: __devops.k8s.deployment.replicas__
+  selector:
+    matchLabels:
+      app: nextgen-server
+  template:
+    metadata:
+      labels:
+        app: nextgen-server
+        azureReleaseName: "__Release.ReleaseName__"
+        azureDeploymentId: "__Release.DeploymentID__"
+      annotations:
+        release/release-name: __Release.ReleaseName__
+    spec:
+      containers:
+        - name: nextgen-server-__avp.tenant__-__devOps.stage__
+          image: __devOps.container.registry.hostname__/avp/nextgen/nextgen-server:__devOps.pipeline.build__
+          args: ["__avp.server.command.option__"]
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1G"
+            limits:
+              cpu: "1"
+              memory: "2G"
+          readinessProbe:
+            httpGet:
+              path: /avp/server/actuator/health/readiness
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 70
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /avp/server/actuator/health/liveness
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 240
+            periodSeconds: 600
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 30
+          env:
+            - name: tenantId
+              value: "__avp.tenant__"
+            - name: avpVersion
+              value: "__avp.app.version__"
+            - name: aksClusterRegion
+              value: "__devOps.k8s.cluster.region__"
+            - name: aksClusterIndex
+              value: "__devOps.k8s.cluster.index__"
+            - name: avpSupportedApps
+              value: "__avp.supported.apps__"
+          volumeMounts:
+            - name: application-properties
+              mountPath: /home/analyst/nextgen-server/secrets/application.properties
+              subPath: application.properties
+            - name: avp-product-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/avpProduct.json
+              subPath: avpProduct.json
+            - name: nxtgen-product-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/nxtgenProduct.json
+              subPath: nxtgenProduct.json
+            - name: avp-product-full-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/avpProductFullVersion.json
+              subPath: avpProductFullVersion.json
+            - name: nxtgen-product-full-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/nxtgenProductFullVersion.json
+              subPath: nxtgenProductFullVersion.json
+            - name: uap-product-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/uapProduct.json
+              subPath: uapProduct.json
+            - name: core-platform-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/coreplatform.json
+              subPath: coreplatform.json
+            - name: nextgen-server-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/nextgenService.json
+              subPath: nextgenService.json
+            - name: nextgen-client-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/nextgenClient.json
+              subPath: nextgenClient.json
+            - name: nextgen-power-bi-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/nextgenPowerBI.json
+              subPath: nextgenPowerBI.json
+            - name: nextgen-dbutil-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/nextgenDbutil.json
+              subPath: nextgenDbutil.json
+            - name: vdl-product-version-json
+              mountPath: /home/analyst/nextgen-server/secrets/vdlProduct.json
+              subPath: vdlProduct.json
+      imagePullSecrets:
+        - name: __devOps.container.registry.connection__
+      volumes:
+        - name: application-properties
+          secret:
+            secretName: application-secrets
+        - name: avp-product-version-json
+          configMap:
+            name: avp-product-version
+        - name: nxtgen-product-version-json
+          configMap:
+            name: nxtgen-product-version
+        - name: avp-product-full-version-json
+          configMap:
+            name: avp-product-full-version
+        - name: nxtgen-product-full-version-json
+          configMap:
+            name: nxtgen-product-full-version
+        - name: uap-product-version-json
+          configMap:
+            name: uap-product-version
+        - name: core-platform-version-json
+          configMap:
+            name: core-platform-version
+        - name: nextgen-server-version-json
+          configMap:
+            name: nextgen-server-version
+        - name: nextgen-client-version-json
+          configMap:
+            name: nextgen-client-version
+        - name: nextgen-power-bi-version-json
+          configMap:
+            name: nextgen-power-bi-version
+        - name: nextgen-dbutil-version-json
+          configMap:
+            name: nextgen-dbutil-version
+        - name: vdl-product-version-json
+          configMap:
+            name: vdl-product-version
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avp-server-svc
+  labels:
+    app: nextgen-server
+  namespace: __devOps.stage.ns__
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: nextgen-server
